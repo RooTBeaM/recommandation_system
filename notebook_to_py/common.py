@@ -29,3 +29,8 @@ def CheckProductID(df_product, df_order_v1):
     # Print the list of product IDs not present
     print("Product IDs not present in df_product_matrix:" , len(product_ids_list))
     print(product_ids_list)
+
+def print_product_links(product_ls, productID_to_url):
+    # print("Product Links:")
+    for product_id in product_ls:
+        print(productID_to_url[product_id])
