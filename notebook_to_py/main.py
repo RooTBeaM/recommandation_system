@@ -4,6 +4,12 @@ import os
 from common import *
 from preprocess import *
 from vector import *
+from update_product import *
+# directory
+CLEAN_DIR = 'clean_data'
+VECTOR_DIR = 'vector_data'
+MERGE_DIR = 'merge_data'
+MATRIX_DIR = 'matrix_data'
 
 order_col = [
     'customer_id','order_product_id','browser', 'platform',
@@ -102,7 +108,6 @@ def mode_0():
         print('Encoding in Cleaning Process was Failed')
         os._exit(0)
 
-    # CLEAN_DIR = 'clean_data'
     # save_csv(df_order, CLEAN_DIR, subname='')
 
     # Product category
@@ -139,12 +144,10 @@ def mode_0():
         print('Creating New UserID was Failed')
         os._exit(0)
 
-    MERGE_DIR = 'merge_data'
     CheckProductID(df_product,df_order_v1)
     save_csv(df_order_v1, MERGE_DIR, subname='')
 
     # Create Vectors
-    VECTOR_DIR = 'vector_data'
     try:
         df_full_vector = pd.read_csv(select_csv_path(MERGE_DIR))[full_cols]
 
@@ -159,7 +162,6 @@ def mode_0():
         os._exit(0) 
 
     # Create Matrixs
-    MATRIX_DIR = 'matrix_data'
     try: # Cosine Similarity
         df_user_vector = pd.read_csv(select_csv_path(os.path.join('.',VECTOR_DIR,'user')))
         df_product_vector = pd.read_csv(select_csv_path(os.path.join('.',VECTOR_DIR,'product')))
@@ -188,21 +190,65 @@ def mode_0():
         print('Creating Distances Matrix was Failed')
         os._exit(0)    
 
+def mode_2():
+    try:
+        user_id = int(input('Input your UserID :'))
+        recommend_ls = print_user_purchase_and_recommendation(user_id, productID_to_url, top_n=10, url=False)
+    except:
+        print(f'UserID: {user_id} was not found')
+        os._exit(0)   
+
 def mode_1():
     try:
-        input_id = int(input('UserID :'))
-        print_user_purchase_and_recommendation(input_id, productID_to_url, top_n=10, url=False)
+        df_product = pd.read_csv('../raw_csv/dtt_product.csv')
+        df_product = df_product[~df_product['product_id'].isin(test_productID)]
+        df_product_cat = pd.read_csv('../raw_csv/dtt_product_category.csv')
+        # intial values for Category
+        c = 0.0
+        df_product_cat = ProductEncode(df_product_cat)
+        df_updateProduct_vector = update_NewProduct(df_product, df_product_cat, cat_cols, VECTOR_DIR, c)
+        # similarity
+        df_user_vector = pd.read_csv(select_csv_path(os.path.join('.',VECTOR_DIR,'user')))
+        create_similarity_matrix(df_user_vector, df_updateProduct_vector, similarity_cols)
+        df_user_item_distance = pd.read_csv(select_csv_path(os.path.join('.',MATRIX_DIR,'distance','user_item')))
+        df_full_order = pd.read_csv(select_csv_path(MERGE_DIR))
+        evaluation(df_user_item_distance, df_full_order, top_n=50)
+        # distance
+        create_distance_matrix(df_user_vector, df_updateProduct_vector, distance_cols)
+        df_user_item_distance = pd.read_csv(select_csv_path(os.path.join('.',MATRIX_DIR,'distance','user_item')))
+        df_full_order = pd.read_csv(select_csv_path(MERGE_DIR))
+        evaluation(df_user_item_distance, df_full_order, top_n=50)
+
+        print('Updating Recommendation Matrix is completed')
+        print('-'*50,'\n')
     except:
-        print(f'UserID: {input_id} was not found')
-        os._exit(0)   
+        print(f'Updating Recommendation Matrix was Failed')
+        os._exit(0)  
+
+def mode_3():
+    try:
+        country_code = int(input('Input your Country Code :'))
+        recommend_ls = print_country_purchase_and_recommendation(country_code, productID_to_url, similarity_cols, distance_cols, top_n=10, url=False)
+    except:
+        print(f'Country Code: {country_code} was not found')
+        os._exit(0)    
 
 
 if __name__ == '__main__':
-    print('0 : creat recommendations matrix\n1 : test')
+    print('Select your Mode :\n \
+        0 : Creat Recommendation Matrix\n \
+        1 : Update New Products and Recommendation Matrix\n \
+        2 : List of Recommend Products by userID\n \
+        3 : List of Recommend Products by Country')
     input_mode = int(input('Mode :'))
     if input_mode == 0:
         mode_0()
     elif input_mode == 1:
         mode_1()
+    elif input_mode == 2:
+        mode_2()
+        pass
+    elif input_mode == 3:
+        mode_3()
     else:
         print('Input mode is incorrect')

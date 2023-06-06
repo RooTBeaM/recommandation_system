@@ -116,11 +116,40 @@ def print_user_purchase_and_recommendation(customer_id, productID_to_url, top_n=
     if not url:
         print("User Recommended Products:")
         print(recommend_ls)
-        # return recommend_ls
+        return recommend_ls
     else:
         VECTOR_DIR = os.path.join('vector_data','fullVector')
         df_full_vector = pd.read_csv(select_csv_path(VECTOR_DIR)) 
         history_list = df_full_vector[df_full_vector['new_id']== customer_id]['product_id'].tolist()
+        
+        print("User Purchase History:")
+        print_product_links(history_list, productID_to_url)
+        print("User Recommended Products:")
+        print_product_links(recommend_ls, productID_to_url)
+
+def print_country_purchase_and_recommendation(country_code, productID_to_url, similarity_cols, distance_cols, top_n=10, url=False):
+    df_product_vector = pd.read_csv(select_csv_path(os.path.join('.','vector_data','product')))
+    df_countryCode_vector =  pd.read_csv(select_csv_path(os.path.join('vector_data','countryCode')))
+    country_vector = df_countryCode_vector[df_countryCode_vector['country_code']==country_code]
+    if country_vector.shape[0] == 0:
+        print(f'Country Code : {country_code} is not found in DATABASE')
+        return None
+    else:
+        df_item_item_similarity = compute_similarity(df_countryCode_vector, df_product_vector, 'country_code', 'product_id', similarity_cols)
+        df_item_item_distance = compute_distance(df_countryCode_vector, df_product_vector, 'country_code', 'product_id', distance_cols)
+        top_30 = list(map(int,recommend_products(df_item_item_similarity, country_code, n=30)))
+        customer_scores = df_item_item_distance.loc[country_code].sort_values(ascending=False).index.tolist()
+        distance_list = list(map(int,customer_scores))
+        recommend_ls = list(itertools.filterfalse(lambda x: x not in top_30, distance_list))[:top_n]
+
+    if not url:
+        print("User Recommended Products:")
+        print(recommend_ls)
+        return recommend_ls
+    else:
+        VECTOR_DIR = os.path.join('vector_data','fullVector')
+        df_full_vector = pd.read_csv(select_csv_path(VECTOR_DIR)) 
+        history_list = df_full_vector[df_full_vector['country_code']== country_code]['product_id'].tolist()
         
         print("User Purchase History:")
         print_product_links(history_list, productID_to_url)
