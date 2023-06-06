@@ -94,24 +94,25 @@ def mode_0():
     # Encode
     try:
         df_order = CleanEncode(df_order, df_country)
-        print('Encoding Data for Orders is completed')
         print(f'Dataframe shape : {df_order.shape}')
         print(f'Dataframe columns name : \n{df_order.columns}\n')
+        print('Encoding Data for Orders is completed')
+        print('-'*50,'\n')
     except:
         print('Encoding in Cleaning Process was Failed')
         os._exit(0)
 
-    CLEAN_DIR = './clean_data/'
-    save_csv(df_order, CLEAN_DIR, subname='')
-    print('-'*50,'\n')
+    # CLEAN_DIR = 'clean_data'
+    # save_csv(df_order, CLEAN_DIR, subname='')
 
     # Product category
     try:
         df_product_cat = ProductEncode(df_product_cat)
         print(f'Total products : {len(df_product_cat)}')
-        print('Encoding Data for Products is completed')
         print(f'Dataframe shape : {df_product_cat.shape}')
         print(f'Dataframe columns name : \n{df_product_cat.columns}\n')
+        print('Encoding Data for Products is completed')
+        print('-'*50,'\n')
     except:
         print("Encoding Product's Categories was Failed")
         os._exit(0)    
@@ -119,31 +120,31 @@ def mode_0():
     # Mearge product category
     try:
         df_order_v1 = pd.merge(df_order[df_order['order_state']==2], df_product_cat, on='product_id')
-        print('Merging Product catagory is completed')
         print(f'Dataframe shape : {df_order_v1.shape}')
         # print(f'Dataframe columns name : \n{df_order_v1.columns}\n')
+        print('Merging Product catagory is completed')
+        print('-'*50,'\n')
     except:
         print("Mearging Product's Categories was Failed")
-        os._exit(0)    
+        os._exit(0)
 
     # New User ID
     start_newID = 10000
     try:
         df_order_v1, end_newID = CreateNewID(df_order_v1, start_newID, use_cols)
-        print('Creating New UserID is completed')
         print(f'New UserID start from {start_newID} to {end_newID}')
+        print('Creating New UserID is completed')
+        print('-'*50,'\n')
     except:
         print('Creating New UserID was Failed')
-        os._exit(0)    
+        os._exit(0)
 
-    MERGE_DIR = './merge_data/'
-    df_full_order = pd.read_csv(select_csv_path(MERGE_DIR))
-    CheckProductID(df_product,df_full_order)
-    save_csv(df_full_order, MERGE_DIR, subname='')
-    print('-'*50,'\n')
+    MERGE_DIR = 'merge_data'
+    CheckProductID(df_product,df_order_v1)
+    save_csv(df_order_v1, MERGE_DIR, subname='')
 
     # Create Vectors
-    VECTOR_DIR = './vector_data/'
+    VECTOR_DIR = 'vector_data'
     try:
         df_full_vector = pd.read_csv(select_csv_path(MERGE_DIR))[full_cols]
 
@@ -158,29 +159,30 @@ def mode_0():
         os._exit(0) 
 
     # Create Matrixs
-    MATRIX_DIR = './matrix_data/'
+    MATRIX_DIR = 'matrix_data'
     try: # Cosine Similarity
-        df_user_vector = pd.read_csv(select_csv_path(VECTOR_DIR+'user/'))
-        df_product_vector = pd.read_csv(select_csv_path(VECTOR_DIR+'product/'))
+        df_user_vector = pd.read_csv(select_csv_path(os.path.join('.',VECTOR_DIR,'user')))
+        df_product_vector = pd.read_csv(select_csv_path(os.path.join('.',VECTOR_DIR,'product')))
         create_similarity_matrix(df_user_vector, df_product_vector, similarity_cols)
-        print('Creating Similarity Matrix is completed')
 
-        df_user_item_similarity = pd.read_csv(select_csv_path(MATRIX_DIR+'similarity/user_item/'))
+        df_user_item_similarity = pd.read_csv(select_csv_path(os.path.join('.',MATRIX_DIR,'similarity','user_item')))
         df_full_order = pd.read_csv(select_csv_path(MERGE_DIR))
         evaluation(df_user_item_similarity, df_full_order, top_n=50)
+        print('Creating Similarity Matrix is completed')
         print('-'*50,'\n')
     except:
         print('Creating Similarity Matrix was Failed')
         os._exit(0)
 
     try: # Euclidean Distances
-        df_user_vector = pd.read_csv(select_csv_path(VECTOR_DIR+'user/'))
-        df_product_vector = pd.read_csv(select_csv_path(VECTOR_DIR+'product/'))
+        df_user_vector = pd.read_csv(select_csv_path(os.path.join('.',VECTOR_DIR,'user')))
+        df_product_vector = pd.read_csv(select_csv_path(os.path.join('.',VECTOR_DIR,'product')))
         create_distance_matrix(df_user_vector, df_product_vector, distance_cols)
 
-        df_user_item_distance = pd.read_csv(select_csv_path(MATRIX_DIR+'distance/user_item/'))
+        df_user_item_distance = pd.read_csv(select_csv_path(os.path.join('.',MATRIX_DIR,'distance','user_item')))
         df_full_order = pd.read_csv(select_csv_path(MERGE_DIR))
         evaluation(df_user_item_distance, df_full_order, top_n=50)
+        print('Creating Distances Matrix is completed')
         print('-'*50,'\n')
     except:
         print('Creating Distances Matrix was Failed')

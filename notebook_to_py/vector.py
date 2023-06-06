@@ -76,31 +76,27 @@ def CreateVector(df_full_vector, vector_cols, VECTOR_DIR):
     save_csv(df_countryCode_vector, VECTOR_DIR, subname='countryCode')
 
 def create_similarity_matrix(df_user_vector, df_product_vector, similarity_cols):
-    MATRIX_DIR = './matrix_data/similarity/'
+    MATRIX_DIR = os.path.join('matrix_data','similarity')
     df_user_item_similarity = compute_similarity(df_user_vector, df_product_vector, 'new_id', 'product_id', similarity_cols)
     save_csv(df_user_item_similarity, MATRIX_DIR, subname='user_item', idx = True)
-
     df_item_item_similarity = compute_similarity(df_product_vector, df_product_vector, 'product_id', 'product_id', similarity_cols)
     save_csv(df_item_item_similarity, MATRIX_DIR, subname='item_item', idx = True)
-
     df_user_user_similarity = compute_similarity(df_user_vector, df_user_vector, 'new_id', 'new_id', similarity_cols)
     save_csv(df_user_user_similarity, MATRIX_DIR, subname='user_user', idx = True)
 
 def create_distance_matrix(df_user_vector, df_product_vector, distance_cols):
-    MATRIX_DIR = './matrix_data/distance/'
+    MATRIX_DIR = os.path.join('matrix_data','distance')
     df_user_item_distance = compute_distance(df_user_vector, df_product_vector, 'new_id', 'product_id', distance_cols)
     save_csv(df_user_item_distance, MATRIX_DIR, subname='user_item', idx = True)
-
     df_item_item_distance = compute_distance(df_product_vector, df_product_vector, 'product_id', 'product_id', distance_cols)
     save_csv(df_item_item_distance, MATRIX_DIR, subname='item_item', idx = True)
-
     df_user_user_distance = compute_distance(df_user_vector, df_user_vector, 'new_id', 'new_id', distance_cols)
     save_csv(df_user_user_distance, MATRIX_DIR, subname='user_user', idx = True)
 
 def recommend_top_n(df_similarity, df_distance, customer_id, top_n=10):
     # need load df_user_vector and len(cleanHistory_list) < 10
-    VECTOR_DIR = './vector_data/'
-    df_full_vector = pd.read_csv(select_csv_path(VECTOR_DIR+'fullVector/'))
+    VECTOR_DIR = os.path.join('vector_data','fullVector')
+    df_full_vector = pd.read_csv(select_csv_path(VECTOR_DIR))
     top_50 = list(map(int,recommend_products(df_similarity, customer_id, n=50)))
     history_list = df_full_vector[df_full_vector['new_id']== customer_id]['product_id'].tolist()
     cleanHistory_list = list(itertools.filterfalse(lambda x: x in history_list, top_50))
@@ -111,9 +107,8 @@ def recommend_top_n(df_similarity, df_distance, customer_id, top_n=10):
     return recommend_ls
 
 def print_user_purchase_and_recommendation(customer_id, productID_to_url, top_n=10, url=True):
-    MATRIX_DIR = './matrix_data/'
-    df_user_item_similarity = pd.read_csv(select_csv_path(MATRIX_DIR+'similarity/user_item/'))
-    df_user_item_distance = pd.read_csv(select_csv_path(MATRIX_DIR+'distance/user_item/')) 
+    df_user_item_similarity = pd.read_csv(select_csv_path(os.path.join('matrix_data','similarity','user_item')))
+    df_user_item_distance = pd.read_csv(select_csv_path(os.path.join('matrix_data','distance','user_item'))) 
     df_user_item_distance.set_index('new_id', inplace=True)
     df_user_item_similarity.set_index('new_id', inplace=True)
     recommend_ls = recommend_top_n(df_user_item_similarity, df_user_item_distance, customer_id, top_n=top_n)
@@ -123,8 +118,8 @@ def print_user_purchase_and_recommendation(customer_id, productID_to_url, top_n=
         print(recommend_ls)
         # return recommend_ls
     else:
-        VECTOR_DIR = './vector_data/'
-        df_full_vector = pd.read_csv(select_csv_path(VECTOR_DIR+'fullVector/')) 
+        VECTOR_DIR = os.path.join('vector_data','fullVector')
+        df_full_vector = pd.read_csv(select_csv_path(VECTOR_DIR)) 
         history_list = df_full_vector[df_full_vector['new_id']== customer_id]['product_id'].tolist()
         
         print("User Purchase History:")
