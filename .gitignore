@@ -163,8 +163,8 @@ csv
 api
 py
 .vscode
-notebook_to_py/clean_data
-notebook_to_py/merge_data
-notebook_to_py/vector_data
-notebook_to_py/matrix_data
-test.py
+clean_data
+merge_data
+vector_data
+matrix_data
+test
