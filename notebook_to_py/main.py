@@ -247,7 +247,6 @@ if __name__ == '__main__':
         mode_1()
     elif input_mode == 2:
         mode_2()
-        pass
     elif input_mode == 3:
         mode_3()
     else:
