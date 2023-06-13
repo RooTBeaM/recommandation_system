@@ -19,7 +19,8 @@ VECTOR_DIR = 'vector_data'
 MERGE_DIR = 'merge_data'
 MATRIX_DIR = 'matrix_data'
 
-
+user_cols = [
+    'customer_id','new_id','customer_firstname', 'customer_lastname', 'customer_email', 'customer_gender', 'customer_country']
 order_col = [
     'customer_id','order_product_id','browser', 'platform',
     'customer_firstname','customer_lastname','customer_email','customer_gender', 
@@ -228,7 +229,7 @@ def mode_1():
         os._exit(0)  
 
 def mode_2():
-    try:
+    try: 
         user_id = int(input('Input your UserID :'))
         recommend_ls = print_user_purchase_and_recommendation(user_id, productID_to_url, top_n=10, url=False)
     except:
@@ -243,14 +244,17 @@ def mode_3():
         print(f'Country Code: {country_code} was not found')
         os._exit(0)  
 
-
+def mode_4():
+    create_recommend_list('country', similarity_cols, distance_cols, user_cols,top_n=10)
+    create_recommend_list('user', similarity_cols, distance_cols, user_cols,top_n=10)
 
 if __name__ == '__main__':
     print('Select your Mode :\n \
-        0 : Creat Recommendation Matrix\n \
+        0 : Create Recommendation Matrix\n \
         1 : Update New Products and Recommendation Matrix\n \
         2 : List of Recommend Products by userID\n \
-        3 : List of Recommend Products by Country')
+        3 : List of Recommend Products by Country\n \
+        4 : Create Recommendation')
     input_mode = int(input('Mode :'))
     if input_mode == 0:
         mode_0()
@@ -260,5 +264,8 @@ if __name__ == '__main__':
         mode_2()
     elif input_mode == 3:
         mode_3()
+    elif input_mode == 4:
+        mode_4()
+    
     else:
         print('Input mode is incorrect')
