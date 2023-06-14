@@ -11,7 +11,7 @@ from vector import *
 from update_product import *
 
 DB_DTT = 'dtt'
-DB_AI = 'AI'
+DB_AI = 'daytriptour_ai'
 
 # directory
 CLEAN_DIR = 'clean_data'
@@ -141,7 +141,7 @@ def mode_0():
         print('Merging Product catagory is completed')
         print('-'*50,'\n')
     except:
-        print("Mearging Product's Categories was Failed")
+        print("Merging Product's Categories was Failed")
         os._exit(0)
 
     # New User ID

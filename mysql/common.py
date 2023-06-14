@@ -51,7 +51,7 @@ def query_AI(table, subname='', log=True):
         fullname = table+'_'+subname
     else:
         fullname = table
-    df = pd.read_sql(f'SELECT * FROM AI.{fullname}', con=engine)
+    df = pd.read_sql(f'SELECT * FROM daytriptour_ai.{fullname}', con=engine)
     if log: 
         print(f'READ DB_AI: {fullname}')
     return df

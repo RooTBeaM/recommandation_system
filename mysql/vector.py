@@ -191,7 +191,7 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, top_n
             recommend = list(itertools.filterfalse(lambda x: x not in cleanHistory_list, distance_list))[:top_n]
             recommend_ls.append(json.dumps(recommend))
         df_newUser['recommendation'] = recommend_ls
-        update_AI(df_newUser, 'user_reccommand')
+        update_AI(df_newUser, 'user_recommend')
 
     elif mode == 'country':
         df_product_vector = query_AI('vector_data_product')
@@ -212,6 +212,6 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, top_n
                 recommend = list(itertools.filterfalse(lambda x: x not in top_30, distance_list))[:top_n]
             recommend_ls.append(json.dumps(recommend))
         df_countryCode_vector['recommendation'] = recommend_ls
-        update_AI(df_countryCode_vector[['country_code','recommendation']], 'country_reccommand')
+        update_AI(df_countryCode_vector[['country_code','recommendation']], 'country_recommend')
     else:
         print(f'{mode} does not exist.')

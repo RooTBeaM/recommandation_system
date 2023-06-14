@@ -6,7 +6,7 @@ import os
 
 from config import *
 DB_DTT = 'dtt'
-DB_AI = 'AI'
+DB_AI = 'daytriptour_ai'
 
 # Database setup
 def create_database(cursor, DB_NAME):

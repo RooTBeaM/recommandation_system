@@ -13,3 +13,7 @@ schedule.every(5).minutes.do(job)
 while True:
     schedule.run_pending()
     time.sleep(60) # wait one minute
+
+# mode_0()
+# mode_1()
+# mode_4()
