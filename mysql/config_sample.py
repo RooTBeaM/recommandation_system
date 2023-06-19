@@ -20,6 +20,6 @@ config_ai = {
   'password': 'xxx',
   'host': '127.0.0.1',
   'port': '3306',
-  'database': 'AI', # default
+  'database': 'daytriptour_ai', # default
   'raise_on_warnings': True
 }
