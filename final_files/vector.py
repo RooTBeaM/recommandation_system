@@ -20,16 +20,16 @@ def compute_distance(df1, df2, index_col1, index_col2, data_cols):
     df_distance = pd.DataFrame(distance_matrix, columns=df2[index_col2], index=df1[index_col1])
     return df_distance
 
-def recommend_products(df_similarity, customer_id, n=5):
-    customer_scores = df_similarity.loc[customer_id].sort_values(ascending=False)
+def recommend_products(df_similarity, customer_id, n=5, ascending=False):
+    customer_scores = df_similarity.loc[customer_id].sort_values(ascending=ascending)
     top_n_products = customer_scores.index[:n].tolist()
     return top_n_products
 
-def evaluation(df_similarity, df_full_order, top_n=5):
+def evaluation(df_similarity, df_full_order, top_n=5, ascending=False):
     df_similarity.set_index('new_id', inplace=True)
     evaluation_results = []
     for new_id in df_full_order['new_id']:
-        recommended_products = recommend_products(df_similarity, new_id, n=top_n)
+        recommended_products = recommend_products(df_similarity, new_id, n=top_n, ascending=ascending)
         has_product_in_top5 = any(str(product) in recommended_products for product in df_full_order[df_full_order['new_id'] == new_id]['product_id'])
         evaluation_results.append(has_product_in_top5)
     percentage = (sum(evaluation_results) / len(evaluation_results)) * 100
@@ -60,22 +60,24 @@ def CreateVector(df_full_vector, vector_cols, VECTOR_DIR):
     df_product_vector = df_full_vector.groupby('product_id')[vector_cols].mean()
     df_product_vector.reset_index(inplace=True)
     update_AI(df_product_vector, VECTOR_DIR, subname='product')
-    # browser_vector
-    df_browser_vector = df_full_vector.groupby('browser')[vector_cols].mean()
-    df_browser_vector.reset_index(inplace=True)
-    update_AI(df_browser_vector, VECTOR_DIR, subname='browser')
-    # platform_vector
-    df_platform_vector = df_full_vector.groupby('platform')[vector_cols].mean()
-    df_platform_vector.reset_index(inplace=True)
-    update_AI(df_platform_vector, VECTOR_DIR, subname='platform')
-    # customer_gender_vector
-    df_gender_vector = df_full_vector.groupby('customer_gender')[vector_cols].mean()
-    df_gender_vector.reset_index(inplace=True)
-    update_AI(df_gender_vector, VECTOR_DIR, subname='gender')
     # countryCode_vector
     df_countryCode_vector = df_full_vector.groupby('country_code')[vector_cols].mean()
     df_countryCode_vector.reset_index(inplace=True)
     update_AI(df_countryCode_vector, VECTOR_DIR, subname='countryCode')
+    # Month_vector
+    df_month = df_full_vector.groupby(['product_id','departure_month']).size().reset_index(name='counts')
+    df_month_vector = pd.DataFrame(columns=['product_id']+month_cols)
+    for i in df_month['product_id'].unique():
+        df = df_month[df_month['product_id']==i]
+        s = pd.Series(dict(zip(df.departure_month.map(lambda x : 'm_'+str(x)),df.counts))).T
+        s['product_id'] = i
+        s = pd.DataFrame(s).T
+        df_month_vector = pd.concat([df_month_vector,s], ignore_index=True)
+    df_month_vector = df_month_vector.fillna(0)
+    df_month_vector[month_cols] = df_month_vector[month_cols]+1
+    df_month_vector[month_cols] = softmax(df_month_vector[month_cols].to_numpy())
+    update_AI(df_month_vector, VECTOR_DIR, subname='month')
+
 
 def create_similarity_matrix(df_user_vector, df_product_vector, similarity_cols):
     MATRIX_DIR = 'matrix_data_similarity'
@@ -147,7 +149,7 @@ def print_country_purchase_and_recommendation(country_code, productID_to_url, si
         df_item_item_similarity = compute_similarity(df_countryCode_vector, df_product_vector, 'country_code', 'product_id', similarity_cols)
         df_item_item_distance = compute_distance(df_countryCode_vector, df_product_vector, 'country_code', 'product_id', distance_cols)
         top_30 = list(map(int,recommend_products(df_item_item_similarity, country_code, n=30)))
-        customer_scores = df_item_item_distance.loc[country_code].sort_values(ascending=False).index.tolist()
+        customer_scores = df_item_item_distance.loc[country_code].sort_values(ascending=True).index.tolist()
         distance_list = list(map(int,customer_scores))
         recommend_ls = list(itertools.filterfalse(lambda x: x not in top_30, distance_list))[:top_n]
 
@@ -186,7 +188,7 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, top_n
             top_50 = list(map(int,recommend_products(df_user_item_similarity, customer_id, n=50)))
             history_list = df_full_vector[df_full_vector['new_id']== customer_id]['product_id'].tolist()
             cleanHistory_list = list(itertools.filterfalse(lambda x: x in history_list, top_50))
-            customer_scores = df_user_item_distance.loc[customer_id].sort_values(ascending=False).index.tolist()
+            customer_scores = df_user_item_distance.loc[customer_id].sort_values(ascending=True).index.tolist()
             distance_list = list(map(int,customer_scores))
             recommend = list(itertools.filterfalse(lambda x: x not in cleanHistory_list, distance_list))[:top_n]
             recommend_ls.append(json.dumps(recommend))
@@ -207,7 +209,7 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, top_n
                 df_item_item_similarity = compute_similarity(df_countryCode_vector, df_product_vector, 'country_code', 'product_id', similarity_cols)
                 df_item_item_distance = compute_distance(df_countryCode_vector, df_product_vector, 'country_code', 'product_id', distance_cols)
                 top_30 = list(map(int,recommend_products(df_item_item_similarity, country_code, n=30)))
-                customer_scores = df_item_item_distance.loc[country_code].sort_values(ascending=False).index.tolist()
+                customer_scores = df_item_item_distance.loc[country_code].sort_values(ascending=True).index.tolist()
                 distance_list = list(map(int,customer_scores))
                 recommend = list(itertools.filterfalse(lambda x: x not in top_30, distance_list))[:top_n]
             recommend_ls.append(json.dumps(recommend))

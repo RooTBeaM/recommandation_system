@@ -18,8 +18,8 @@ def compute_distance(df1, df2, index_col1, index_col2, data_cols):
     df_distance = pd.DataFrame(distance_matrix, columns=df2[index_col2], index=df1[index_col1])
     return df_distance
 
-def recommend_products(df_similarity, customer_id, n=5):
-    customer_scores = df_similarity.loc[customer_id].sort_values(ascending=False)
+def recommend_products(df_similarity, customer_id, n=5, ascending=False):
+    customer_scores = df_similarity.loc[customer_id].sort_values(ascending=ascending)
     top_n_products = customer_scores.index[:n].tolist()
     return top_n_products
 
@@ -101,7 +101,7 @@ def recommend_top_n(df_similarity, df_distance, customer_id, top_n=10):
     history_list = df_full_vector[df_full_vector['new_id']== customer_id]['product_id'].tolist()
     cleanHistory_list = list(itertools.filterfalse(lambda x: x in history_list, top_50))
 
-    customer_scores = df_distance.loc[customer_id].sort_values(ascending=False).index.tolist()
+    customer_scores = df_distance.loc[customer_id].sort_values(ascending=True).index.tolist()
     distance_list = list(map(int,customer_scores))
     recommend_ls = list(itertools.filterfalse(lambda x: x not in cleanHistory_list, distance_list))[:top_n]
     return recommend_ls
