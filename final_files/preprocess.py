@@ -1,6 +1,7 @@
 import re
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 from sklearn.preprocessing import OrdinalEncoder
 
 def has_numbers(inputString):
@@ -156,7 +157,7 @@ def CreateNewID(df_user_id, start_newID, use_cols):
     del email_dict['support@daytriptour.com']
 
     # Replace customer_id [0,23]
-    for i in email_dict.keys():
+    for i in tqdm(email_dict.keys()):
         x = df_user_id.query(f'new_email == "{str(i)}"')['customer_id'].unique().tolist()
         if 0 in x: x.remove(0)
         if 23 in x: x.remove(23)
@@ -174,9 +175,9 @@ def CreateNewID(df_user_id, start_newID, use_cols):
             start_newID+=1
 
     email_dict_daytriptour = df_user_id.query('new_email == "support@daytriptour.com"')['new_lastname'].value_counts()
-    print(f'Daytriptour New UserID start from {start_newID}')
+    print(f'New UserID start from 10000 to {start_newID}')
     
-    for i in email_dict_daytriptour.keys():
+    for i in tqdm(email_dict_daytriptour.keys()):
         x = df_user_id.query(f'new_lastname == "{str(i)}" & new_email == "support@daytriptour.com"')['new_firstname'].unique().tolist()
         if len(x) == 1:
             idx = df_user_id.query(f'new_lastname == "{str(i)}" & new_email == "support@daytriptour.com"').index

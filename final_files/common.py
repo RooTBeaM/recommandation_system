@@ -46,7 +46,7 @@ def query_dtt(table):
     print(f'READ DB_DTT: {table}')
     return df
 
-def query_AI(table, subname='', log=True):
+def query_AI(table, subname='', log=False):
     db_connection_str = f"mysql+pymysql://{config_ai['user']}:{config_ai['password']}@{config_ai['host']}:{config_ai['port']}/{config_ai['database']}"
     engine = create_engine(db_connection_str)
     if subname:
@@ -66,4 +66,4 @@ def update_AI(df, table, subname='', idx=False):
     else:
         fullname = table
     df.to_sql(fullname, con=engine, if_exists='replace', index=idx)
-    print(f'UPDATE DB: {fullname} is completed')
+    # print(f'UPDATE DB: {fullname} is completed')

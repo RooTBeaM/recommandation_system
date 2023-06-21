@@ -35,11 +35,10 @@ def Create_Recommedation():
     # New User ID
     start_newID = 10000
     df_order_v1, end_newID = CreateNewID(df_order_v1, start_newID, use_cols)
-    print('Cleaning Process is completed')
-    print('-'*50,'\n')
-
     # Update table
     update_AI(df_order_v1, CLEAN_DIR)
+    print('Cleaning Process is completed')
+    print('-'*50)
 
     # Check products_id not in Orders
     CheckProductID(df_order_v1)
@@ -52,7 +51,7 @@ def Create_Recommedation():
     df_full_vector = EncodeVector(df_full_vector, cat_cols, c)
     CreateVector(df_full_vector, vector_cols, VECTOR_DIR)
     print('Creating Vectors is completed')
-    print('-'*50,'\n')
+    print('-'*50)
 
     # Create Matrixs
     df_user_vector = query_AI(VECTOR_DIR,'user')
@@ -63,35 +62,34 @@ def Create_Recommedation():
     df_user_item_similarity = query_AI(MATRIX_DIR+'_similarity','user_item')
     evaluation(df_user_item_similarity, df_full_order, top_n=50, ascending=False)
     print('Creating Similarity Matrix is completed')
-    print('-'*50,'\n')
+    print('-'*50)
         # Euclidean Distances
     create_distance_matrix(df_user_vector, df_product_vector, distance_cols)
     df_user_item_distance = query_AI(MATRIX_DIR+'_distance','user_item')
     evaluation(df_user_item_distance, df_full_order, top_n=50, ascending=True)
     print('Creating Distances Matrix is completed')
-    print('-'*50,'\n')
+    print('-'*50)
 
     # Update New Products and Recommendation Matrix
     df_product = query_dtt('dtt_product')
     df_product = df_product[~df_product['product_id'].isin(test_productID)]
     df_product_cat = query_dtt('dtt_product_category')
-    # intial values for Category
-    c = 0.0
+
     df_product_cat = ProductEncode(df_product_cat)
-    updated, df_updateProduct_vector = update_NewProduct(df_product, df_product_cat, cat_cols, VECTOR_DIR, c)
+    updated = update_NewProduct(df_product, df_product_cat, cat_cols, VECTOR_DIR, c)
     if updated:
+        df_product_vector = query_AI(VECTOR_DIR,'product')
             # Cosine Similarity
-        # df_user_vector = query_AI(VECTOR_DIR,'user')
-        create_similarity_matrix(df_user_vector, df_updateProduct_vector, similarity_cols)
+        create_similarity_matrix(df_user_vector, df_product_vector, similarity_cols)
         df_user_item_distance = query_AI(MATRIX_DIR+'_distance','user_item')
         evaluation(df_user_item_distance, df_full_order, top_n=50, ascending=False)
             # Euclidean Distances
-        create_distance_matrix(df_user_vector, df_updateProduct_vector, distance_cols)
+        create_distance_matrix(df_user_vector, df_product_vector, distance_cols)
         df_user_item_distance = query_AI(MATRIX_DIR+'_distance','user_item')
         evaluation(df_user_item_distance, df_full_order, top_n=50, ascending=True)
 
         print('Updating Recommendation Matrix is completed')
-        print('-'*50,'\n')
+        print('-'*50)
     else:
         print('All Products already updated')
 
