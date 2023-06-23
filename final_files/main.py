@@ -96,7 +96,7 @@ def Create_Recommedation():
     # Create the recommendation list
     print('Creating recommendation for Users')
     create_recommend_list('user', similarity_cols, distance_cols, user_cols,top_n=10)
-    print('Creating recommendation for Country')
+    print('Creating recommendation for Countries')
     create_recommend_list('country', similarity_cols, distance_cols, user_cols,top_n=10)
     print('Updating ALL Recommendation List is completed')
 
