@@ -5,7 +5,7 @@ import json
 from tqdm import tqdm
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.metrics.pairwise import euclidean_distances
-
+from datetime import datetime
 from common import *
 
 def softmax(x, axis = 1):
@@ -52,6 +52,7 @@ def CreateVector(df_full_vector, vector_cols, VECTOR_DIR):
     df_month_vector = df_month_vector.fillna(0)
     df_month_vector[month_cols] = df_month_vector[month_cols]+1
     df_month_vector[month_cols] = softmax(df_month_vector[month_cols].to_numpy())
+    df_month_vector[month_cols] = softmax(df_month_vector[month_cols].to_numpy(),axis=0)
     update_AI(df_month_vector, VECTOR_DIR, subname='month')
 
 # Matrix
@@ -115,6 +116,12 @@ def recommend_top_n(df_similarity, df_distance, customer_id, top_n=10):
 def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, top_n=10):
     df_product = query_dtt('dtt_product')
     ls = df_product[df_product['is_active']==0]['product_id'].tolist()
+    # 
+    df_month_vector = query_AI('vector_data_month')
+    df_month_vector.set_index('product_id', inplace=True)
+    # df_month_vector.drop(index=map(int, ls), inplace=True, errors='ignore')
+    now = datetime.today()
+    this_month = f'm_{now.month}'
     if mode == 'user':
         df_user_item_similarity = query_AI('matrix_data_similarity','user_item')
         df_user_item_similarity.drop(columns=map(str, ls), inplace=True, errors='ignore')
@@ -133,8 +140,10 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, top_n
             top_50 = list(map(int,recommend_products(df_user_item_similarity, customer_id, n=50)))
             history_list = df_full_vector[df_full_vector['new_id']== customer_id]['product_id'].tolist()
             cleanHistory_list = list(itertools.filterfalse(lambda x: x in history_list, top_50))
-            customer_scores = df_user_item_distance.loc[customer_id].sort_values(ascending=True).index.tolist()
-            distance_list = list(map(int,customer_scores))
+            customer_scores = df_user_item_distance.loc[customer_id].sort_values(ascending=True)
+            for idx in customer_scores.index:
+                customer_scores[str(idx)] = customer_scores[str(idx)] - df_month_vector[this_month][int(idx)]
+            distance_list = list(map(int,customer_scores.sort_values(ascending=True).index.tolist()))
             recommend = list(itertools.filterfalse(lambda x: x not in cleanHistory_list, distance_list))[:top_n]
             recommend_ls.append(json.dumps(recommend))
         df_newUser['recommendation'] = recommend_ls
@@ -154,8 +163,10 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, top_n
                 df_item_item_similarity = compute_similarity(df_countryCode_vector, df_product_vector, 'country_code', 'product_id', similarity_cols)
                 df_item_item_distance = compute_distance(df_countryCode_vector, df_product_vector, 'country_code', 'product_id', distance_cols)
                 top_30 = list(map(int,recommend_products(df_item_item_similarity, country_code, n=30)))
-                customer_scores = df_item_item_distance.loc[country_code].sort_values(ascending=True).index.tolist()
-                distance_list = list(map(int,customer_scores))
+                customer_scores = df_item_item_distance.loc[country_code].sort_values(ascending=True)
+                for idx in customer_scores.index:
+                    customer_scores[int(idx)] = customer_scores[int(idx)] - df_month_vector[this_month][int(idx)]
+                distance_list = list(map(int,customer_scores.sort_values(ascending=True).index.tolist()))
                 recommend = list(itertools.filterfalse(lambda x: x not in top_30, distance_list))[:top_n]
             recommend_ls.append(json.dumps(recommend))
         df_countryCode_vector['recommendation'] = recommend_ls
@@ -163,60 +174,61 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, top_n
     else:
         print(f'{mode} does not exist.')
 
-# Debug Log
-def print_user_purchase_and_recommendation(customer_id, productID_to_url, top_n=10, url=True):
-    df_product = query_dtt('dtt_product')
-    ls = df_product[df_product['is_active']==0]['product_id'].tolist()
-    df_user_item_similarity = query_AI('matrix_data_similarity','user_item')
-    df_user_item_similarity.drop(columns=map(str, ls), inplace=True, errors='ignore')
-    df_user_item_similarity.set_index('new_id', inplace=True)
-    df_user_item_distance = query_AI('matrix_data_distance','user_item')
-    df_user_item_distance.drop(columns=map(str, ls), inplace=True, errors='ignore')
-    df_user_item_distance.set_index('new_id', inplace=True)
-    recommend_ls = recommend_top_n(df_user_item_similarity, df_user_item_distance, customer_id, top_n=top_n)
+# CAN NOT use because it need to add month vector
+# # Debug Log
+# def print_user_purchase_and_recommendation(customer_id, productID_to_url, top_n=10, url=True):
+#     df_product = query_dtt('dtt_product')
+#     ls = df_product[df_product['is_active']==0]['product_id'].tolist()
+#     df_user_item_similarity = query_AI('matrix_data_similarity','user_item')
+#     df_user_item_similarity.drop(columns=map(str, ls), inplace=True, errors='ignore')
+#     df_user_item_similarity.set_index('new_id', inplace=True)
+#     df_user_item_distance = query_AI('matrix_data_distance','user_item')
+#     df_user_item_distance.drop(columns=map(str, ls), inplace=True, errors='ignore')
+#     df_user_item_distance.set_index('new_id', inplace=True)
+#     recommend_ls = recommend_top_n(df_user_item_similarity, df_user_item_distance, customer_id, top_n=top_n)
     
-    if not url:
-        print("User Recommended Products:")
-        print(recommend_ls)
-        return recommend_ls
-    else:
-        VECTOR_DIR = 'vector_data_fullVector'
-        df_full_vector = query_AI(VECTOR_DIR)
-        history_list = df_full_vector[df_full_vector['new_id']== customer_id]['product_id'].tolist()
+#     if not url:
+#         print("User Recommended Products:")
+#         print(recommend_ls)
+#         return recommend_ls
+#     else:
+#         VECTOR_DIR = 'vector_data_fullVector'
+#         df_full_vector = query_AI(VECTOR_DIR)
+#         history_list = df_full_vector[df_full_vector['new_id']== customer_id]['product_id'].tolist()
         
-        print("User Purchase History:")
-        print_product_links(history_list, productID_to_url)
-        print("User Recommended Products:")
-        print_product_links(recommend_ls, productID_to_url)
+#         print("User Purchase History:")
+#         print_product_links(history_list, productID_to_url)
+#         print("User Recommended Products:")
+#         print_product_links(recommend_ls, productID_to_url)
 
-def print_country_purchase_and_recommendation(country_code, productID_to_url, similarity_cols, distance_cols, top_n=10, url=False):
-    df_product = query_dtt('dtt_product')
-    ls = df_product[df_product['is_active']==0]['product_id'].tolist()
-    df_product_vector = query_AI('vector_data_product')
-    df_product_vector.drop(index=map(int, ls), inplace=True, errors='ignore')
-    df_countryCode_vector =  query_AI('vector_data_countryCode')
-    country_vector = df_countryCode_vector[df_countryCode_vector['country_code']==country_code]
-    if country_vector.shape[0] == 0:
-        print(f'Country Code : {country_code} is not found in DATABASE')
-        return None
-    else:
-        df_item_item_similarity = compute_similarity(df_countryCode_vector, df_product_vector, 'country_code', 'product_id', similarity_cols)
-        df_item_item_distance = compute_distance(df_countryCode_vector, df_product_vector, 'country_code', 'product_id', distance_cols)
-        top_30 = list(map(int,recommend_products(df_item_item_similarity, country_code, n=30)))
-        customer_scores = df_item_item_distance.loc[country_code].sort_values(ascending=True).index.tolist()
-        distance_list = list(map(int,customer_scores))
-        recommend_ls = list(itertools.filterfalse(lambda x: x not in top_30, distance_list))[:top_n]
+# def print_country_purchase_and_recommendation(country_code, productID_to_url, similarity_cols, distance_cols, top_n=10, url=False):
+#     df_product = query_dtt('dtt_product')
+#     ls = df_product[df_product['is_active']==0]['product_id'].tolist()
+#     df_product_vector = query_AI('vector_data_product')
+#     df_product_vector.drop(index=map(int, ls), inplace=True, errors='ignore')
+#     df_countryCode_vector =  query_AI('vector_data_countryCode')
+#     country_vector = df_countryCode_vector[df_countryCode_vector['country_code']==country_code]
+#     if country_vector.shape[0] == 0:
+#         print(f'Country Code : {country_code} is not found in DATABASE')
+#         return None
+#     else:
+#         df_item_item_similarity = compute_similarity(df_countryCode_vector, df_product_vector, 'country_code', 'product_id', similarity_cols)
+#         df_item_item_distance = compute_distance(df_countryCode_vector, df_product_vector, 'country_code', 'product_id', distance_cols)
+#         top_30 = list(map(int,recommend_products(df_item_item_similarity, country_code, n=30)))
+#         customer_scores = df_item_item_distance.loc[country_code].sort_values(ascending=True).index.tolist()
+#         distance_list = list(map(int,customer_scores))
+#         recommend_ls = list(itertools.filterfalse(lambda x: x not in top_30, distance_list))[:top_n]
 
-    if not url:
-        print("User Recommended Products:")
-        print(recommend_ls)
-        return recommend_ls
-    else:
-        VECTOR_DIR = 'vector_data_fullVector'
-        df_full_vector = query_AI(VECTOR_DIR)
-        history_list = df_full_vector[df_full_vector['country_code']== country_code]['product_id'].tolist()
+#     if not url:
+#         print("User Recommended Products:")
+#         print(recommend_ls)
+#         return recommend_ls
+#     else:
+#         VECTOR_DIR = 'vector_data_fullVector'
+#         df_full_vector = query_AI(VECTOR_DIR)
+#         history_list = df_full_vector[df_full_vector['country_code']== country_code]['product_id'].tolist()
         
-        print("User Purchase History:")
-        print_product_links(history_list, productID_to_url)
-        print("User Recommended Products:")
-        print_product_links(recommend_ls, productID_to_url)
+#         print("User Purchase History:")
+#         print_product_links(history_list, productID_to_url)
+#         print("User Recommended Products:")
+#         print_product_links(recommend_ls, productID_to_url)

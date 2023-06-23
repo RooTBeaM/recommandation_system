@@ -94,9 +94,11 @@ def Create_Recommedation():
         print('All Products already updated')
 
     # Create the recommendation list
-    create_recommend_list('country', similarity_cols, distance_cols, user_cols,top_n=10)
+    print('Creating recommendation for Users')
     create_recommend_list('user', similarity_cols, distance_cols, user_cols,top_n=10)
-
+    print('Creating recommendation for Country')
+    create_recommend_list('country', similarity_cols, distance_cols, user_cols,top_n=10)
+    print('Updating ALL Recommendation List is completed')
 
 if __name__ == '__main__':
     Create_Recommedation()
