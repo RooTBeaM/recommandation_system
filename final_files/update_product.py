@@ -6,8 +6,8 @@ from common import *
 from config import month_cols
 
 def update_NewProduct(df_product, df_product_cat, cat_cols, VECTOR_DIR, c=0):
-    df_product_vector = query_AI('vector_data_product')
-    df_month_vector = query_AI('vector_data_month')
+    df_product_vector = query_AI('vector_product')
+    df_month_vector = query_AI('vector_month')
     product_ids_not_present = ~df_product['product_id'].isin(df_product_vector['product_id'])
     product_ids_list = df_product.loc[product_ids_not_present, 'product_id'].tolist()
     print("Product IDs not present in Order:" , len(product_ids_list))

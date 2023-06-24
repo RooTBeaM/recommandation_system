@@ -77,7 +77,7 @@ def evaluation(df_similarity, df_full_order, top_n=5, ascending=False):
     print(f"Percentage of new_id values with at least one product in the top {top_n} recommendations:", round(percentage,2))
 
 def create_similarity_matrix(df_user_vector, df_product_vector, similarity_cols):
-    MATRIX_DIR = 'matrix_data_similarity'
+    MATRIX_DIR = 'matrix_similarity'
     df_user_item_similarity = compute_similarity(df_user_vector, df_product_vector, 'new_id', 'product_id', similarity_cols)
     update_AI(df_user_item_similarity, MATRIX_DIR, subname='user_item', idx = True)
     df_item_item_similarity = compute_similarity(df_product_vector, df_product_vector, 'product_id', 'product_id', similarity_cols)
@@ -86,7 +86,7 @@ def create_similarity_matrix(df_user_vector, df_product_vector, similarity_cols)
     # update_AI(df_user_user_similarity, MATRIX_DIR, subname='user_user', idx = True)
 
 def create_distance_matrix(df_user_vector, df_product_vector, distance_cols):
-    MATRIX_DIR = 'matrix_data_distance'
+    MATRIX_DIR = 'matrix_distance'
     df_user_item_distance = compute_distance(df_user_vector, df_product_vector, 'new_id', 'product_id', distance_cols)
     update_AI(df_user_item_distance, MATRIX_DIR, subname='user_item', idx = True)
     df_item_item_distance = compute_distance(df_product_vector, df_product_vector, 'product_id', 'product_id', distance_cols)
@@ -102,7 +102,7 @@ def recommend_products(df_similarity, customer_id, n=5, ascending=False):
 
 def recommend_top_n(df_similarity, df_distance, customer_id, top_n=10):
     # need load df_user_vector and len(cleanHistory_list) < 10
-    VECTOR_DIR = 'vector_data_fullVector'
+    VECTOR_DIR = 'vector_fullVector'
     df_full_vector = query_AI(VECTOR_DIR, log=False)
     top_50 = list(map(int,recommend_products(df_similarity, customer_id, n=50)))
     history_list = df_full_vector[df_full_vector['new_id']== customer_id]['product_id'].tolist()
@@ -113,29 +113,30 @@ def recommend_top_n(df_similarity, df_distance, customer_id, top_n=10):
     recommend_ls = list(itertools.filterfalse(lambda x: x not in cleanHistory_list, distance_list))[:top_n]
     return recommend_ls
 
-def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, top_n=10):
+def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, recommend_product_ls=[] , top_n=10):
     df_product = query_dtt('dtt_product')
     ls = df_product[df_product['is_active']==0]['product_id'].tolist()
-    # 
-    df_month_vector = query_AI('vector_data_month')
+
+    df_month_vector = query_AI('vector_month')
     df_month_vector.set_index('product_id', inplace=True)
     # df_month_vector.drop(index=map(int, ls), inplace=True, errors='ignore')
     now = datetime.today()
     this_month = f'm_{now.month}'
     if mode == 'user':
-        df_user_item_similarity = query_AI('matrix_data_similarity','user_item')
+        df_user_item_similarity = query_AI('matrix_similarity','user_item')
         df_user_item_similarity.drop(columns=map(str, ls), inplace=True, errors='ignore')
         df_user_item_similarity.set_index('new_id', inplace=True)
-        df_user_item_distance = query_AI('matrix_data_distance','user_item')
+        df_user_item_distance = query_AI('matrix_distance','user_item')
         df_user_item_distance.drop(columns=map(str, ls), inplace=True, errors='ignore')
         df_user_item_distance.set_index('new_id', inplace=True)
 
-        VECTOR_DIR = 'vector_data_fullVector'
+        VECTOR_DIR = 'vector_fullVector'
         df_full_vector = query_AI(VECTOR_DIR, log=False)
 
         df_newUser = query_AI('clean_data')
         df_newUser = df_newUser.drop_duplicates(subset='new_id')[user_cols]
         recommend_ls = []
+        recommend_weather_ls = []
         for customer_id in tqdm(df_newUser['new_id']):
             top_50 = list(map(int,recommend_products(df_user_item_similarity, customer_id, n=50)))
             history_list = df_full_vector[df_full_vector['new_id']== customer_id]['product_id'].tolist()
@@ -144,16 +145,28 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, top_n
             for idx in customer_scores.index:
                 customer_scores[str(idx)] = customer_scores[str(idx)] - df_month_vector[this_month][int(idx)]
             distance_list = list(map(int,customer_scores.sort_values(ascending=True).index.tolist()))
-            recommend = list(itertools.filterfalse(lambda x: x not in cleanHistory_list, distance_list))[:top_n]
+            top = list(itertools.filterfalse(lambda x: x not in cleanHistory_list, distance_list))
+            recommend = top[:top_n]
+            # weather list
+            recommend_weather = [x for x in top if x in recommend_product_ls]
+            if len(recommend_weather) >= top_n:
+                recommend_weather = recommend_weather[:top_n]
+            elif len(recommend_weather) < top_n:
+                recommend_weather = recommend_weather + [x for x in top_n if x not in recommend_weather][:top_n-len(recommend_weather)]
+            else:
+                print(f'{customer_id} : can not create recommend weather')
             recommend_ls.append(json.dumps(recommend))
+            recommend_weather_ls.append(json.dumps(recommend_weather))
         df_newUser['recommendation'] = recommend_ls
+        df_newUser['recommendation_weather'] = recommend_weather_ls
         update_AI(df_newUser, 'user_recommend')
 
     elif mode == 'country':
-        df_product_vector = query_AI('vector_data_product')
+        df_product_vector = query_AI('vector_product')
         df_product_vector.drop(index=map(int, ls), inplace=True, errors='ignore')
-        df_countryCode_vector =  query_AI('vector_data_countryCode')
+        df_countryCode_vector =  query_AI('vector_countryCode')
         recommend_ls = []
+        recommend_weather_ls = []
         for country_code in tqdm(df_countryCode_vector['country_code']):
             country_vector = df_countryCode_vector[df_countryCode_vector['country_code']==country_code]
             if country_vector.shape[0] == 0:
@@ -162,15 +175,26 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, top_n
             else:
                 df_item_item_similarity = compute_similarity(df_countryCode_vector, df_product_vector, 'country_code', 'product_id', similarity_cols)
                 df_item_item_distance = compute_distance(df_countryCode_vector, df_product_vector, 'country_code', 'product_id', distance_cols)
-                top_30 = list(map(int,recommend_products(df_item_item_similarity, country_code, n=30)))
+                top_50 = list(map(int,recommend_products(df_item_item_similarity, country_code, n=50)))
                 customer_scores = df_item_item_distance.loc[country_code].sort_values(ascending=True)
                 for idx in customer_scores.index:
                     customer_scores[int(idx)] = customer_scores[int(idx)] - df_month_vector[this_month][int(idx)]
                 distance_list = list(map(int,customer_scores.sort_values(ascending=True).index.tolist()))
-                recommend = list(itertools.filterfalse(lambda x: x not in top_30, distance_list))[:top_n]
+                top = list(itertools.filterfalse(lambda x: x not in top_50, distance_list))
+                recommend = top[:top_n]
+                # weather list
+                recommend_weather = [x for x in top if x in recommend_product_ls]
+                if len(recommend_weather) >= top_n:
+                    recommend_weather = recommend_weather[:top_n]
+                elif len(recommend_weather) < top_n:
+                    recommend_weather = recommend_weather + [x for x in top_n if x not in recommend_weather][:top_n-len(recommend_weather)]
+                else:
+                    print(f'{customer_id} : can not create recommend weather')
             recommend_ls.append(json.dumps(recommend))
+            recommend_weather_ls.append(json.dumps(recommend_weather))
         df_countryCode_vector['recommendation'] = recommend_ls
-        update_AI(df_countryCode_vector[['country_code','recommendation']], 'country_recommend')
+        df_countryCode_vector['recommendation_weather'] = recommend_weather_ls
+        update_AI(df_countryCode_vector[['country_code','recommendation','recommendation_weather']], 'country_recommend')
     else:
         print(f'{mode} does not exist.')
 
@@ -179,10 +203,10 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, top_n
 # def print_user_purchase_and_recommendation(customer_id, productID_to_url, top_n=10, url=True):
 #     df_product = query_dtt('dtt_product')
 #     ls = df_product[df_product['is_active']==0]['product_id'].tolist()
-#     df_user_item_similarity = query_AI('matrix_data_similarity','user_item')
+#     df_user_item_similarity = query_AI('matrix_similarity','user_item')
 #     df_user_item_similarity.drop(columns=map(str, ls), inplace=True, errors='ignore')
 #     df_user_item_similarity.set_index('new_id', inplace=True)
-#     df_user_item_distance = query_AI('matrix_data_distance','user_item')
+#     df_user_item_distance = query_AI('matrix_distance','user_item')
 #     df_user_item_distance.drop(columns=map(str, ls), inplace=True, errors='ignore')
 #     df_user_item_distance.set_index('new_id', inplace=True)
 #     recommend_ls = recommend_top_n(df_user_item_similarity, df_user_item_distance, customer_id, top_n=top_n)
@@ -192,7 +216,7 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, top_n
 #         print(recommend_ls)
 #         return recommend_ls
 #     else:
-#         VECTOR_DIR = 'vector_data_fullVector'
+#         VECTOR_DIR = 'vector_fullVector'
 #         df_full_vector = query_AI(VECTOR_DIR)
 #         history_list = df_full_vector[df_full_vector['new_id']== customer_id]['product_id'].tolist()
         
@@ -204,9 +228,9 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, top_n
 # def print_country_purchase_and_recommendation(country_code, productID_to_url, similarity_cols, distance_cols, top_n=10, url=False):
 #     df_product = query_dtt('dtt_product')
 #     ls = df_product[df_product['is_active']==0]['product_id'].tolist()
-#     df_product_vector = query_AI('vector_data_product')
+#     df_product_vector = query_AI('vector_product')
 #     df_product_vector.drop(index=map(int, ls), inplace=True, errors='ignore')
-#     df_countryCode_vector =  query_AI('vector_data_countryCode')
+#     df_countryCode_vector =  query_AI('vector_countryCode')
 #     country_vector = df_countryCode_vector[df_countryCode_vector['country_code']==country_code]
 #     if country_vector.shape[0] == 0:
 #         print(f'Country Code : {country_code} is not found in DATABASE')
@@ -224,7 +248,7 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, top_n
 #         print(recommend_ls)
 #         return recommend_ls
 #     else:
-#         VECTOR_DIR = 'vector_data_fullVector'
+#         VECTOR_DIR = 'vector_fullVector'
 #         df_full_vector = query_AI(VECTOR_DIR)
 #         history_list = df_full_vector[df_full_vector['country_code']== country_code]['product_id'].tolist()
         

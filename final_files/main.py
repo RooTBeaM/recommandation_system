@@ -9,6 +9,7 @@ from common import *
 from preprocess import *
 from vector import *
 from update_product import *
+from weather import *
 
 def Create_Recommedation():
     # Load data from database
@@ -93,12 +94,18 @@ def Create_Recommedation():
     else:
         print('All Products already updated')
 
+    print('Creating Recommended Products list by Weather')
+    recommended_weather_products = get_recommended_weather_products()
+    print(f'List of Recommended Products by Weather : {len(recommended_weather_products)}\n{recommended_weather_products}')
+
     # Create the recommendation list
     print('Creating recommendation for Users')
-    create_recommend_list('user', similarity_cols, distance_cols, user_cols,top_n=10)
+    create_recommend_list('user', similarity_cols, distance_cols, user_cols,recommend_product_ls=recommended_weather_products,top_n=10)
     print('Creating recommendation for Countries')
-    create_recommend_list('country', similarity_cols, distance_cols, user_cols,top_n=10)
+    create_recommend_list('country', similarity_cols, distance_cols, user_cols,recommend_product_ls=recommended_weather_products,top_n=10)
     print('Updating ALL Recommendation List is completed')
+    print('-'*50)
+
 
 if __name__ == '__main__':
     Create_Recommedation()

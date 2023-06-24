@@ -1,38 +1,40 @@
-# DB schema name
+# DB schema name # change DB name her
 DB_DTT = 'dtt'
 DB_AI = 'daytriptour_ai'
 
 config = {
   'user': 'root',
-  'password': 'xxx',
-  'host': '127.0.0.1',
-  'port': '3306',
+  'password': 'xxx',# change here!
+  'host': 'xxx',# change here!
+  'port': '3306',# change here!
   'raise_on_warnings': True
 }
 
 config_dtt = {
   'user': 'root',
-  'password': 'xxx',
-  'host': '127.0.0.1',
-  'port': '3306',
+  'password': 'xxx',# change here!
+  'host': 'xxx',# change here!
+  'port': '3306',# change here!
   'database': DB_DTT,
   'raise_on_warnings': True
 }
 
 config_ai = {
   'user': 'root',
-  'password': 'xxx',
-  'host': '127.0.0.1',
-  'port': '3306',
+  'password': 'xxx',# change here!
+  'host': 'xxx',# change here!
+  'port': '3306',# change here!
   'database': DB_AI,
   'raise_on_warnings': True
 }
 
+# change API key for pyowm here!
+api_key = '90890dd21edc71db1a02b25b51bd6456'
+
 # directory
 CLEAN_DIR = 'clean_data'
-VECTOR_DIR = 'vector_data'
-MATRIX_DIR = 'matrix_data'
-
+VECTOR_DIR = 'vector'
+MATRIX_DIR = 'matrix'
 
 user_cols = [
     'customer_id','new_id','customer_firstname', 'customer_lastname', 'customer_email', 'customer_gender', 'customer_country']
