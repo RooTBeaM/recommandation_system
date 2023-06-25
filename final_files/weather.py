@@ -15,7 +15,7 @@ def create_station(df_province):
     df_stations = stations[['id', 'name', 'latitude', 'longitude']]
     df_stations = df_stations.rename(columns={'id': 'stations_id', 'name': 'stations_name'})
     # Create a geocoder object
-    geolocator = Nominatim(user_agent='panya.sirikul@gmail.com')
+    geolocator = Nominatim(user_agent='my_agent')
     # Define a function to get the province and country from coordinates
     def get_location_info(latitude, longitude):
         location = geolocator.reverse((latitude, longitude), exactly_one=True)

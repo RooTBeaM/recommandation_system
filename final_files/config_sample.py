@@ -29,7 +29,7 @@ config_ai = {
 }
 
 # change API key for pyowm here!
-api_key = '90890dd21edc71db1a02b25b51bd6456'
+api_key = 'xxx'
 
 # directory
 CLEAN_DIR = 'clean_data'
