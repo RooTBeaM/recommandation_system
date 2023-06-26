@@ -26,8 +26,8 @@ def create_station(df_province):
             return province, country
         else:
             return '', ''
-    df_stations[['province', 'country']] = df_stations.apply(lambda row: pd.Series(get_location_info(row['latitude'], row['longitude'])), axis=1)
-    # df_stations = pd.read_csv('stations.csv')
+    # df_stations[['province', 'country']] = df_stations.apply(lambda row: pd.Series(get_location_info(row['latitude'], row['longitude'])), axis=1)
+    df_stations = pd.read_csv('stations.csv')
     df_stations['province'] = df_stations['province'].str.replace('จังหวัด', '')
     df_stations.loc[df_stations['stations_name'] == 'Mae Hong Son', 'province'] = 'แม่ฮ่องสอน'
     df_stations.loc[df_stations['stations_name'] == 'Chiang Mai', 'province'] = 'เชียงใหม่'

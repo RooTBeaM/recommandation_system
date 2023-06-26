@@ -1,9 +1,4 @@
-import mysql.connector
-from mysql.connector import errorcode
-from sqlalchemy import create_engine
 import pandas as pd
-import os
-
 from config import *
 from common import *
 from preprocess import *

@@ -27,7 +27,7 @@ def EncodeVector(df_full_vector, cat_cols, c=0):
 
 def CreateVector(df_full_vector, vector_cols, VECTOR_DIR):
     # full_vector
-    update_AI(df_full_vector, VECTOR_DIR, subname='fullVector')
+    update_AI(df_full_vector, VECTOR_DIR, subname='fullvector')
     # user_vector
     df_user_vector = df_full_vector.groupby('new_id')[vector_cols].mean()
     df_user_vector.reset_index(inplace=True)
@@ -102,7 +102,7 @@ def recommend_products(df_similarity, customer_id, n=5, ascending=False):
 
 def recommend_top_n(df_similarity, df_distance, customer_id, top_n=10):
     # need load df_user_vector and len(cleanHistory_list) < 10
-    VECTOR_DIR = 'vector_fullVector'
+    VECTOR_DIR = 'vector_fullvector'
     df_full_vector = query_AI(VECTOR_DIR, log=False)
     top_50 = list(map(int,recommend_products(df_similarity, customer_id, n=50)))
     history_list = df_full_vector[df_full_vector['new_id']== customer_id]['product_id'].tolist()
@@ -130,7 +130,7 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, recom
         df_user_item_distance.drop(columns=map(str, ls), inplace=True, errors='ignore')
         df_user_item_distance.set_index('new_id', inplace=True)
 
-        VECTOR_DIR = 'vector_fullVector'
+        VECTOR_DIR = 'vector_fullvector'
         df_full_vector = query_AI(VECTOR_DIR, log=False)
 
         df_newUser = query_AI('clean_data')
@@ -152,14 +152,14 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, recom
             if len(recommend_weather) >= top_n:
                 recommend_weather = recommend_weather[:top_n]
             elif len(recommend_weather) < top_n:
-                recommend_weather = recommend_weather + [x for x in top_n if x not in recommend_weather][:top_n-len(recommend_weather)]
+                recommend_weather = recommend_weather + [x for x in top if x not in recommend_weather][:top_n-len(recommend_weather)]
             else:
                 print(f'{customer_id} : can not create recommend weather')
             recommend_ls.append(json.dumps(recommend))
             recommend_weather_ls.append(json.dumps(recommend_weather))
         df_newUser['recommendation'] = recommend_ls
         df_newUser['recommendation_weather'] = recommend_weather_ls
-        update_AI(df_newUser, 'user_recommend')
+        update_AI(df_newUser, 'recommend_user')
 
     elif mode == 'country':
         df_product_vector = query_AI('vector_product')
@@ -187,14 +187,14 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, recom
                 if len(recommend_weather) >= top_n:
                     recommend_weather = recommend_weather[:top_n]
                 elif len(recommend_weather) < top_n:
-                    recommend_weather = recommend_weather + [x for x in top_n if x not in recommend_weather][:top_n-len(recommend_weather)]
+                    recommend_weather = recommend_weather + [x for x in top if x not in recommend_weather][:top_n-len(recommend_weather)]
                 else:
                     print(f'{customer_id} : can not create recommend weather')
             recommend_ls.append(json.dumps(recommend))
             recommend_weather_ls.append(json.dumps(recommend_weather))
         df_countryCode_vector['recommendation'] = recommend_ls
         df_countryCode_vector['recommendation_weather'] = recommend_weather_ls
-        update_AI(df_countryCode_vector[['country_code','recommendation','recommendation_weather']], 'country_recommend')
+        update_AI(df_countryCode_vector[['country_code','recommendation','recommendation_weather']], 'recommend_country')
     else:
         print(f'{mode} does not exist.')
 
@@ -216,7 +216,7 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, recom
 #         print(recommend_ls)
 #         return recommend_ls
 #     else:
-#         VECTOR_DIR = 'vector_fullVector'
+#         VECTOR_DIR = 'vector_fullvector'
 #         df_full_vector = query_AI(VECTOR_DIR)
 #         history_list = df_full_vector[df_full_vector['new_id']== customer_id]['product_id'].tolist()
         
@@ -248,7 +248,7 @@ def create_recommend_list(mode, similarity_cols, distance_cols, user_cols, recom
 #         print(recommend_ls)
 #         return recommend_ls
 #     else:
-#         VECTOR_DIR = 'vector_fullVector'
+#         VECTOR_DIR = 'vector_fullvector'
 #         df_full_vector = query_AI(VECTOR_DIR)
 #         history_list = df_full_vector[df_full_vector['country_code']== country_code]['product_id'].tolist()
         

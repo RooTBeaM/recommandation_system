@@ -1,6 +1,4 @@
-import re
 import pandas as pd
-
 from vector import *
 from common import *
 from config import month_cols
